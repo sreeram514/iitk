@@ -28,10 +28,12 @@ class ManualMLP:
         self.weights = []
         self.biases = []
         self.initialisation_function = initialisation_function
+        self.model_name = (f"mlp__layers__{'_'.join(map(str, hidden_layers))}__lr_{learning_rate}__epoch_{epochs}__"
+                           f"activation_{activation_function}__initiation_{initialisation_function}")
         # Define the layer sizes, including input and output layers
         layer_sizes = [input_size] + hidden_layers + [output_size]
         # Initialize weights and biases for each layer
-        for i in range(len(layer_sizes) - 1):  # TODO to support mulitiple Initiations
+        for i in range(len(layer_sizes) - 1):
             if initialisation_function == "He":
                 weight = np.random.randn(layer_sizes[i], layer_sizes[i + 1]) * np.sqrt(2 / layer_sizes[i])  # He initialization
             elif initialisation_function == "Xavier":
@@ -254,7 +256,9 @@ class ManualMLP:
         dict
             A dictionary with the weights and biases of the model.
         """
-        return {'weights': self.weights, 'biases': self.biases}
+        return {'weights': self.weights, 'biases': self.biases,
+                'activation_function': self.activation_function.__name__,
+                "model_name": self.model_name}
 
     def load_model_state(self, state):
         """
@@ -269,5 +273,5 @@ class ManualMLP:
         self.biases = state['biases']
 
     def predict(self, input_x):
-        probabilities,_,_ = self.forward(x=input_x)
+        probabilities, _, _ = self.forward(x=input_x)
         return probabilities
