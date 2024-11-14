@@ -1,7 +1,13 @@
+import os
+
+import joblib
+import numpy as np
 import torch
+from sklearn.metrics import confusion_matrix, classification_report
 from torch.utils.data import Dataset, DataLoader
-from model_utils.cnn_backbone import CNNBackbone, one_hot_encode_nd
 from tqdm import tqdm
+
+from model_utils.cnn_backbone import CNNBackbone, one_hot_encode_nd
 from model_utils.mlp import ManualMLP
 
 
@@ -42,6 +48,7 @@ def cnn_train(torch_datasets, input_size, hidden_layers, learning_rate, num_epoc
                           learning_rate=learning_rate, epochs=num_epochs,
                           initialisation_function=initialisation_function, activation_function=activation_function)
     cnn_model = CNNBackbone(input_channels=1)
+    print(f"CNN Model details : {cnn_model}")
 
     for epoch in range(num_epochs):
         cnn_model.train()
@@ -56,7 +63,7 @@ def cnn_train(torch_datasets, input_size, hidden_layers, learning_rate, num_epoc
         val_losses.append(avg_val_loss)
         print(f'Epoch [{epoch + 1}/{num_epochs}], Training Loss: {avg_train_loss:.4f}  | '
               f'Validation Loss: {avg_val_loss:.4f}')
-    mlp_model.model_name = f"CNN_{mlp_model.model_name}"
+    mlp_model.model_name = f"CNN_16_32_64_128_256_{mlp_model.model_name}"
     print(f"Model ID: {mlp_model.model_name}")
     model_state = mlp_model.save_model_state()
     cnn_trained_dict = {"weights_n_biases": model_state,
@@ -67,7 +74,8 @@ def cnn_train(torch_datasets, input_size, hidden_layers, learning_rate, num_epoc
                         "loss": {'train': train_losses, 'val': val_losses},
                         "epochs": num_epochs,
                         "learning_rate": learning_rate,
-                        "model_name": mlp_model.model_name
+                        "model_name": mlp_model.model_name,
+                        "cnn_state": cnn_model.state_dict()
                         }
     return cnn_trained_dict, mlp_model, cnn_model
 
@@ -80,6 +88,7 @@ def cnn_training_loss(train_loader, cnn_model, mlp_model, output_size=10):
         # Convert labels to one-hot encoding
         one_hot_labels = one_hot_encode_nd(labels=labels.numpy(), num_classes=output_size)
         # Forward pass through MLP
+        # probabilities, _, _ = mlp_model.forward(features.detach().numpy(), dropout_details=[1, 0.25])
         probabilities, _, _ = mlp_model.forward(features.detach().numpy())
         # Compute loss
         loss = mlp_model.cross_entropy_loss(probabilities, one_hot_labels)
@@ -130,3 +139,11 @@ def cnn_test(dataset_dict, mlp_model, cnn_model):
     print("\nClassification Report:")
     print(classification_report(y_true, test_predictions))
     print("------------------------------------------------")
+
+
+def save_model_to_a_file(trained_dict, cnn):
+    models_path = os.path.join(os.getcwd(), 'models')
+    mlp_models_path = os.path.join(models_path, 'mlp')
+    os.makedirs(mlp_models_path, exist_ok=True)
+    joblib.dump(value=trained_dict, filename=os.path.join(mlp_models_path, cnn.model_name), compress=3)
+    print(f"Model saved in {mlp_models_path}/{cnn.model_name}")

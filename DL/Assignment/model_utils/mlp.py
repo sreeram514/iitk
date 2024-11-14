@@ -114,7 +114,7 @@ class ManualMLP:
         mask = np.random.binomial(1, 1 - dropout_rate, size=x.shape)
         return x * mask / (1 - dropout_rate)
 
-    def forward(self, x):
+    def forward(self, x, dropout_details=None):
         """
         Performs the forward pass through the MLP.
 
@@ -139,12 +139,12 @@ class ManualMLP:
         z_values = []
 
         # Forward pass through each layer except the output
-        np.dot(x, self.weights[0])
         for i in range(len(self.weights) - 1):
             z = np.dot(x, self.weights[i]) + self.biases[i]  # linear-transformation
             z_values.append(z)
             x = self.activation_function(z)  # Apply activation and overwrite x so next layer gets x in correct shape to multiply with its weights
-            # dropped_x = self.dropout(x, dropout_rate=0.5)
+            if dropout_details is not None and dropout_details[0] == i:
+                x = self.dropout(x, dropout_rate=dropout_details[1])
             activations.append(x)
 
         # Output layer (with softmax for probabilities)

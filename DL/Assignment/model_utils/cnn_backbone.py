@@ -1,25 +1,30 @@
-from torch.nn.modules import Conv2d, MaxPool2d
+from torch.nn.modules import Conv2d, MaxPool2d, BatchNorm2d
 from torch.nn.modules.module import Module
 from torch.nn.functional import relu, softmax, sigmoid
 import numpy as np
 
-class CNNBackbone(Module):
-    def __init__(self, input_channels=1): #TODO customise input_channels, output_channels,
-        super().__init__()
-        self.conv1 = Conv2d(input_channels, 32, kernel_size=2, stride=1, padding=1)
-        self.conv2 = Conv2d(32, 64, kernel_size=2, stride=1, padding=1)
-        self.conv3 = Conv2d(64, 128, kernel_size=2, stride=1, padding=1)
-        self.conv4 = Conv2d(128, 256, kernel_size=2, stride=1, padding=1)
-        self.conv5 = Conv2d(256, 512, kernel_size=2, stride=1, padding=1)
 
-        self.pool = MaxPool2d(kernel_size=2, stride=2)  # TODO customise kernel_size=2, stride=1
+class CNNBackbone(Module):
+    def __init__(self, input_channels=1):
+        super().__init__()
+        self.conv1 = Conv2d(input_channels, 16, kernel_size=2, stride=1, padding=1)
+        self.bn1 = BatchNorm2d(16)
+        self.conv2 = Conv2d(16, 32, kernel_size=2, stride=1, padding=1)
+        self.bn2 = BatchNorm2d(32)
+        self.conv3 = Conv2d(32, 64, kernel_size=2, stride=1, padding=1)
+        self.bn3 = BatchNorm2d(64)
+        self.conv4 = Conv2d(64, 128, kernel_size=2, stride=1, padding=1)
+        self.bn4 = BatchNorm2d(128)
+        self.conv5 = Conv2d(128, 256, kernel_size=2, stride=1, padding=1)
+        self.bn5 = BatchNorm2d(256)
+        self.pool = MaxPool2d(kernel_size=2, stride=2)
 
     def forward(self, x):
-        x = self.pool(relu(self.conv1(x)))
-        x = self.pool(relu(self.conv2(x)))
-        x = self.pool(relu(self.conv3(x)))
-        x = self.pool(relu(self.conv4(x)))
-        x = self.pool(relu(self.conv5(x)))
+        x = self.pool(relu(self.bn1(self.conv1(x))))
+        x = self.pool(relu(self.bn2(self.conv2(x))))
+        x = self.pool(relu(self.bn3(self.conv3(x))))
+        x = self.pool(relu(self.bn4(self.conv4(x))))
+        x = self.pool(relu(self.bn5(self.conv5(x))))
 
         x = x.view(x.size(0), -1)  # Flatten the tensor before returning
         return x
